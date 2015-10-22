@@ -1,6 +1,6 @@
 organization := "wiii"
 name := "awebapi"
-version := "0.1-SNAPSHOT"
+version := "0.2-SNAPSHOT"
 licenses +=("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 scalaVersion := "2.11.5"
