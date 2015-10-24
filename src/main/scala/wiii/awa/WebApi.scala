@@ -19,13 +19,15 @@ object WebApi {
 
 trait WebApi extends Actor {
     def config: Option[Config] = None
-    val host: String = config.flatMap(_.getAs[String](WebApi.host)).getOrElse("localhost")
-    val port: Int = config.flatMap(_.getAs[Int](WebApi.port)).getOrElse(8080)
-    var serverBinding: Option[Http.ServerBinding] = None
+    private var serverBinding: Option[Http.ServerBinding] = None
 
     implicit val _materializer = ActorMaterializer()(context)
     implicit val _actorSystem = context.system
 
-    def webstart(handler: Flow[HttpRequest, HttpResponse, Any]): Unit = Http().bindAndHandle(handler, host, port).onComplete(b => serverBinding = b.toOption)
+    def webstart(handler: Flow[HttpRequest, HttpResponse, Any]): Unit = {
+        val host: String = config.flatMap(_.getAs[String](WebApi.host)).getOrElse("localhost")
+        val port: Int = config.flatMap(_.getAs[Int](WebApi.port)).getOrElse(8080)
+        Http().bindAndHandle(handler, host, port).onComplete(b => serverBinding = b.toOption)
+    }
     def webstop(): Unit = serverBinding.foreach(_.unbind())
 }

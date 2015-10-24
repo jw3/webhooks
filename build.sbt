@@ -21,6 +21,7 @@ libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-http-experimental" % "1.0",
     "com.typesafe.akka" %% "akka-http-core-experimental" % "1.0",
     "com.typesafe.akka" %% "akka-http-xml-experimental" % "1.0",
+    "com.typesafe.akka" %% "akka-http-spray-json-experimental" % "1.0",
     "com.typesafe.akka" %% "akka-slf4j" % "2.4.0" % Runtime,
 
     "org.scalatest" %% "scalatest" % "2.2.5" % Test,
