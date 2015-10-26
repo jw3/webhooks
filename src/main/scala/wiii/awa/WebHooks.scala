@@ -1,23 +1,25 @@
 package wiii.awa
 
 import java.util.UUID
-import java.util.function.Predicate
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.unmarshalling.{PredefinedFromEntityUnmarshallers => unmarshal}
-import akka.stream.Materializer
+import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers._
+import akka.stream.{ActorMaterializer, Materializer}
 import com.typesafe.config.{Config, ConfigFactory}
 import spray.json._
-import wiii.awa.WebHookProtocol._
+import wiii.awa.WebHookOptProtocol._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 
 trait WebHooks extends WebApi {
-    val hooks = collection.mutable.Set[HookConfig]()
+    import WebHooks._
+
+    val hooks = collection.mutable.Set[HookSubscription]()
 
     def endpointSub: String = "subscribe"
     def endpointUnsub: String = "unsubscribe"
@@ -26,8 +28,9 @@ trait WebHooks extends WebApi {
         path(endpointSub) {
             put { ctx =>
                 ctx.complete(obj = entityToHook(ctx.request.entity).flatMap {
-                    case hook: HookConfig => {
-                        val sub = HookSubscription(UUID.randomUUID, hook)
+                    case hookOpt: HookConfigOpt => {
+                        val sub = HookSubscription(UUID.randomUUID, hookOpt)
+                        hooks.add(sub)
                         Future {sub.id.toString}
                     }
                     case _ => Future {"failed to add hook"}
@@ -35,29 +38,33 @@ trait WebHooks extends WebApi {
             }
         }
     /*~
-               pathPrefix(endpointUnsub / JavaUUID) { id =>
-                   hooks.removeIf(p(_.id == id))
-                   complete {
-                       "OK"
-                   }
-               }*/
+     pathPrefix(endpointUnsub / JavaUUID) { id =>
+       hooks.removeIf(p(_.id == id))
+       complete {
+           "OK"
+       }
+     }*/
 
-    final def post(cfg: Config): Seq[Future[HttpResponse]] = {
+    final def post(cfg: Config): Seq[Future[HttpResponse]] = post(cfg, publish)
+    final def post(cfg: Config, pub: HttpRequest => Future[HttpResponse]): Seq[Future[HttpResponse]] = {
         val data = cfg.root.render()
-        for (hook <- hooks.toList) yield publish(toRequest(hook, data))
+        for (sub <- hooks.toList) yield pub(toRequest(sub.config, data))
     }
-
-    private def publish(r: HttpRequest): Future[HttpResponse] = Http().singleRequest(r)
-
-    def entityToHook(e: HttpEntity)(implicit fm: Materializer): Future[HookConfig] = {
-        unmarshal.byteStringUnmarshaller(fm)(e).map(x => x.utf8String).map(x => x.parseJson.convertTo[HookConfig])
-    }
-    def entityToCfg(e: HttpEntity)(implicit fm: Materializer): Future[Config] = unmarshal.byteStringUnmarshaller(fm)(e).map(_.utf8String).map(ConfigFactory.parseString)
-
-    def p[T](f: T => Boolean) = new Predicate[T] {def test(t: T) = f(t)}
-
-    def toRequest(hook: HookConfig, data: String = ""): HttpRequest = HttpRequest(HttpMethods.POST, Uri.apply(s"${hook.host}:${hook.port}/${hook.path}"), entity = HttpEntity.apply(ContentTypes.`application/json`, data))
 }
 
 
+object WebHooks {
+    private def publish(r: HttpRequest)(implicit sys: ActorSystem, mat: ActorMaterializer): Future[HttpResponse] = {
+        Http().singleRequest(r)
+    }
 
+    def toRequest(hook: HookConfig, data: String = ""): HttpRequest = {
+        HttpRequest(HttpMethods.POST, Uri.apply(s"http://${hook.host}:${hook.port}/${hook.path}"), entity = HttpEntity.apply(ContentTypes.`application/json`, data))
+    }
+    def entityToHook(e: HttpEntity)(implicit fm: Materializer): Future[HookConfigOpt] = {
+        stringUnmarshaller(fm)(e).map(x => x.parseJson.convertTo[HookConfigOpt])
+    }
+    def entityToCfg(e: HttpEntity)(implicit fm: Materializer): Future[Config] = {
+        stringUnmarshaller(fm)(e).map(ConfigFactory.parseString)
+    }
+}

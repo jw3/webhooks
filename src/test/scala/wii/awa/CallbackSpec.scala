@@ -4,18 +4,40 @@ import akka.actor.{Actor, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers._
 import akka.stream.ActorMaterializer
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import com.typesafe.config.{ConfigRenderOptions, ConfigFactory}
+import com.typesafe.config.ConfigFactory
 import org.scalatest.{Matchers, WordSpecLike}
 import wii.awa.CallbackSpec._
-import wiii.awa.{HookConfig, WebApi, WebHooks}
-import spray.json._
-import wiii.awa.WebHookProtocol._
-
-import scala.concurrent.duration.DurationInt
+import wiii.awa.{WebApi, WebHooks}
 
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.DurationInt
+
+
+class CallbackSpec extends TestKit(ActorSystem(classOf[CallbackSpec].getSimpleName.dropRight(1)))
+                           with ImplicitSender with WordSpecLike with Matchers {
+
+    implicit val materializer = ActorMaterializer()
+    val clientProbe = TestProbe()
+    val client = system.actorOf(Client.props(clientProbe))
+    val server = system.actorOf(Props[Server])
+    val serverUri = Uri(s"http://localhost:$serverPort/subscribe")
+
+    "client" should {
+        "reigster callback" in {
+            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, serverUri, entity = s"""{"host":"localhost","port":$clientPort}"""))
+            val r = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(materializer)(_)), 10 seconds)
+            println(r)
+        }
+        "be called back" in {
+            server ! Call()
+            clientProbe.expectMsgType[OK]
+        }
+    }
+}
 
 object CallbackSpec {
     val serverPort = 9999
@@ -27,26 +49,6 @@ object CallbackSpec {
     def cfg(p: Int) = Option(ConfigFactory.parseString(s"webapi.port=$p"))
 }
 
-class CallbackSpec extends TestKit(ActorSystem(classOf[CallbackSpec].getSimpleName.dropRight(1)))
-                           with ImplicitSender with WordSpecLike with Matchers {
-
-    implicit val materializer = ActorMaterializer()
-    val clientProbe = TestProbe()
-    val client = system.actorOf(Client.props(clientProbe))
-    val server = system.actorOf(Props[Server])
-
-    "client" should {
-        "reigster callback" in {
-            val data = ConfigFactory.parseString("host=localhost").root().render(ConfigRenderOptions.concise())
-            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, Uri(s"http://localhost:$serverPort/subscribe"), entity=HttpEntity.apply(ContentTypes.`application/json`, data)))
-            Await.result(f, 10 seconds)
-        }
-        "be called back" in {
-
-        }
-    }
-}
-
 class Server extends Actor with WebHooks {
     override def config = cfg(serverPort)
     override def preStart(): Unit = webstart(webhooks)
@@ -54,10 +56,6 @@ class Server extends Actor with WebHooks {
     def receive: Receive = {
         case Call() => post(ConfigFactory.parseString("{}"))
     }
-}
-
-object Client {
-    def props(probe: TestProbe) = Props(new Client(probe))
 }
 
 class Client(probe: TestProbe) extends Actor with WebApi {
@@ -68,15 +66,17 @@ class Client(probe: TestProbe) extends Actor with WebApi {
         case ok @ OK() => probe.ref ! ok
     }
 
-    val callbackUrl = "expected"
-
     val webhooks =
         post {
-            path(callbackUrl) {
+            pathSingleSlash {
                 complete {
                     self ! OK()
                     "OK"
                 }
             }
         }
+}
+
+object Client {
+    def props(probe: TestProbe) = Props(new Client(probe))
 }
