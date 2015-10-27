@@ -10,7 +10,7 @@ import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{Matchers, WordSpecLike}
 import wii.awa.CallbackSpec._
-import wiii.awa.{ActorWebApi, HookConfig, WebApi, WebHooks}
+import wiii.awa.{ActorWebApi, WebHooks}
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -24,19 +24,29 @@ class CallbackSpec extends TestKit(ActorSystem(classOf[CallbackSpec].getSimpleNa
     val clientProbe = TestProbe()
     val client = system.actorOf(Client.props(clientProbe))
     val server = system.actorOf(Props[Server])
-    val serverUri = Uri(s"http://localhost:$serverPort/subscribe")
+
+    val subscribeUri = Uri(s"http://localhost:$serverPort/subscribe")
+    val unsubscribeUri = Uri(s"http://localhost:$serverPort/unsubscribe")
+    var subscription: String = _
 
     "client" should {
         "reigster callback" in {
-            val hook = HookConfig("localhost", clientPort)
             val json = s"""{"host":"localhost","port":$clientPort}"""
-            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, serverUri, entity = HttpEntity(ContentTypes.`application/json`, json)))
-            val r = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(materializer)(_)), 10 seconds)
-            println(r)
+            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, subscribeUri, entity = HttpEntity(ContentTypes.`application/json`, json)))
+            subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(materializer)(_)), 10 seconds)
         }
         "be called back" in {
             server ! Call()
             clientProbe.expectMsgType[OK]
+        }
+        "be unsubscribed" in {
+            val json = s"""{"id":"$subscription"}"""
+            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, unsubscribeUri, entity = HttpEntity(ContentTypes.`application/json`, json)))
+            val r = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(materializer)(_)), 10 seconds)
+        }
+        "not be called back" in {
+            server ! Call()
+            clientProbe.expectNoMsg()
         }
     }
 }

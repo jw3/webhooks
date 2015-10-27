@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, _}
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import com.typesafe.config.Config
-import wiii.awa.WebHookOptProtocol._
+import wiii.awa.WebHookProtocol._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -17,7 +17,7 @@ import scala.concurrent.Future
 trait WebHooks extends WebApi {
     import WebHooks._
 
-    val hooks = collection.mutable.Set[HookSubscription]()
+    val hooks = collection.mutable.Map[UUID, HookSubscription]()
 
     def endpointSub: String = "subscribe"
     def endpointUnsub: String = "unsubscribe"
@@ -27,23 +27,27 @@ trait WebHooks extends WebApi {
             (put & entity(as[HookConfigOpt])) { hookOpt =>
                 complete {
                     val sub = HookSubscription(UUID.randomUUID, hookOpt)
-                    hooks.add(sub)
+                    hooks(sub.id) = sub
                     Future {sub.id.toString}
                 }
             }
+        } ~ path(endpointUnsub) {
+            (put & entity(as[HookUnsubscribe])) { unsub =>
+                complete {
+                    hooks.get(unsub.id) match {
+                        case Some(sub) =>
+                            hooks.remove(sub.id)
+                            "OK"
+                        case _ => "error 001"
+                    }
+                }
+            }
         }
-    /*~
-     pathPrefix(endpointUnsub / JavaUUID) { id =>
-       hooks.removeIf(p(_.id == id))
-       complete {
-           "OK"
-       }
-     }*/
 
     final def post(cfg: Config): Seq[Future[HttpResponse]] = post(cfg, publish)
     final def post(cfg: Config, pub: HttpRequest => Future[HttpResponse]): Seq[Future[HttpResponse]] = {
         val data = cfg.root.render()
-        for (sub <- hooks.toList) yield pub(toRequest(sub.config, data))
+        for (sub <- hooks.values.toList) yield pub(toRequest(sub.config, data))
     }
 }
 

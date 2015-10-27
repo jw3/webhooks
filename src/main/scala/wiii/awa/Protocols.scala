@@ -16,10 +16,8 @@ object UUIDProtocol extends DefaultJsonProtocol {
 
 object WebHookProtocol extends DefaultJsonProtocol {
     import UUIDProtocol.UUIDJsonProtocol
-    implicit val hookFormat = jsonFormat6(HookConfig.apply)
+    implicit val hookConfig = jsonFormat6(HookConfig.apply)
+    implicit val hookConfigOpt = jsonFormat6(HookConfigOpt.apply)
     implicit val requestFormat = jsonFormat2(HookSubscription)
-}
-
-object WebHookOptProtocol extends DefaultJsonProtocol {
-    implicit val hookFormat = jsonFormat6(HookConfigOpt.apply)
+    implicit val unsubscribe = jsonFormat1(HookUnsubscribe)
 }

@@ -7,6 +7,8 @@ import wiii.awa.HookConfig.Defaults._
 
 case class HookSubscription(id: UUID, config: HookConfig)
 
+case class HookUnsubscribe(id: UUID)
+
 case class HookConfig(host: String,
                       port: Int = defaultPort,
                       path: String = defaultPath,
