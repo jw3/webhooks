@@ -10,7 +10,7 @@ import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{Matchers, WordSpecLike}
 import wii.awa.CallbackSpec._
-import wiii.awa.{WebApi, WebHooks}
+import wiii.awa.{HookConfig, WebApi, WebHooks}
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -28,7 +28,9 @@ class CallbackSpec extends TestKit(ActorSystem(classOf[CallbackSpec].getSimpleNa
 
     "client" should {
         "reigster callback" in {
-            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, serverUri, entity = s"""{"host":"localhost","port":$clientPort}"""))
+            val hook = HookConfig("localhost", clientPort)
+            val json = s"""{"host":"localhost","port":$clientPort}"""
+            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, serverUri, entity = HttpEntity(ContentTypes.`application/json`, json)))
             val r = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(materializer)(_)), 10 seconds)
             println(r)
         }

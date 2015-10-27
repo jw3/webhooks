@@ -4,7 +4,8 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, _}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers._
 import akka.stream.{ActorMaterializer, Materializer}
@@ -14,7 +15,6 @@ import wiii.awa.WebHookOptProtocol._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-
 
 trait WebHooks extends WebApi {
     import WebHooks._
@@ -26,15 +26,12 @@ trait WebHooks extends WebApi {
 
     val webhooks =
         path(endpointSub) {
-            put { ctx =>
-                ctx.complete(obj = entityToHook(ctx.request.entity).flatMap {
-                    case hookOpt: HookConfigOpt => {
-                        val sub = HookSubscription(UUID.randomUUID, hookOpt)
-                        hooks.add(sub)
-                        Future {sub.id.toString}
-                    }
-                    case _ => Future {"failed to add hook"}
-                })
+            (put & entity(as[HookConfigOpt])) { hookOpt =>
+                complete {
+                    val sub = HookSubscription(UUID.randomUUID, hookOpt)
+                    hooks.add(sub)
+                    Future {sub.id.toString}
+                }
             }
         }
     /*~
