@@ -7,10 +7,8 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, _}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers._
-import akka.stream.{ActorMaterializer, Materializer}
-import com.typesafe.config.{Config, ConfigFactory}
-import spray.json._
+import akka.stream.ActorMaterializer
+import com.typesafe.config.Config
 import wiii.awa.WebHookOptProtocol._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -57,11 +55,5 @@ object WebHooks {
 
     def toRequest(hook: HookConfig, data: String = ""): HttpRequest = {
         HttpRequest(HttpMethods.POST, Uri.apply(s"http://${hook.host}:${hook.port}/${hook.path}"), entity = HttpEntity.apply(ContentTypes.`application/json`, data))
-    }
-    def entityToHook(e: HttpEntity)(implicit fm: Materializer): Future[HookConfigOpt] = {
-        stringUnmarshaller(fm)(e).map(x => x.parseJson.convertTo[HookConfigOpt])
-    }
-    def entityToCfg(e: HttpEntity)(implicit fm: Materializer): Future[Config] = {
-        stringUnmarshaller(fm)(e).map(ConfigFactory.parseString)
     }
 }

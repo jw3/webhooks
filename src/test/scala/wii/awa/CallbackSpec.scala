@@ -10,7 +10,7 @@ import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{Matchers, WordSpecLike}
 import wii.awa.CallbackSpec._
-import wiii.awa.{HookConfig, WebApi, WebHooks}
+import wiii.awa.{ActorWebApi, HookConfig, WebApi, WebHooks}
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -51,7 +51,7 @@ object CallbackSpec {
     def cfg(p: Int) = Option(ConfigFactory.parseString(s"webapi.port=$p"))
 }
 
-class Server extends Actor with WebHooks {
+class Server extends Actor with ActorWebApi with WebHooks {
     override def config = cfg(serverPort)
     override def preStart(): Unit = webstart(webhooks)
 
@@ -60,7 +60,7 @@ class Server extends Actor with WebHooks {
     }
 }
 
-class Client(probe: TestProbe) extends Actor with WebApi {
+class Client(probe: TestProbe) extends Actor with ActorWebApi {
     override def config = cfg(clientPort)
     override def preStart(): Unit = webstart(webhooks)
 

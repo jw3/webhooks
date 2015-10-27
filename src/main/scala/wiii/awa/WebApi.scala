@@ -1,6 +1,6 @@
 package wiii.awa
 
-import akka.actor.Actor
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.stream.ActorMaterializer
@@ -17,12 +17,12 @@ object WebApi {
     val port = s"$cfg.port"
 }
 
-trait WebApi extends Actor {
+trait WebApi {
+    implicit def actorSystem: ActorSystem
+    implicit def materializer: ActorMaterializer
+
     def config: Option[Config] = None
     private var serverBinding: Option[Http.ServerBinding] = None
-
-    implicit val _materializer = ActorMaterializer()(context)
-    implicit val _actorSystem = context.system
 
     def webstart(handler: Flow[HttpRequest, HttpResponse, Any]): Unit = {
         val host: String = config.flatMap(_.getAs[String](WebApi.host)).getOrElse("localhost")
