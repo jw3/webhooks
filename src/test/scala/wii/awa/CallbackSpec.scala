@@ -27,6 +27,7 @@ class CallbackSpec extends TestKit(ActorSystem(classOf[CallbackSpec].getSimpleNa
 
     val subscribeUri = Uri(s"http://localhost:$serverPort/subscribe")
     val unsubscribeUri = Uri(s"http://localhost:$serverPort/unsubscribe")
+    val statusUri = Uri(s"http://localhost:$serverPort/status")
     var subscription: String = _
 
     "client" should {
@@ -38,6 +39,11 @@ class CallbackSpec extends TestKit(ActorSystem(classOf[CallbackSpec].getSimpleNa
         "be called back" in {
             server ! Call()
             clientProbe.expectMsgType[OK]
+        }
+        "get status" in {
+            val f = Http().singleRequest(HttpRequest(HttpMethods.GET, statusUri))
+            val status = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(materializer)(_)), 10 seconds)
+            println(s"status:\n$status")
         }
         "be unsubscribed" in {
             val json = s"""{"id":"$subscription"}"""

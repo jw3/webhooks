@@ -5,6 +5,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, _}
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
@@ -42,6 +43,8 @@ trait WebHooks extends WebApi {
                     }
                 }
             }
+        } ~ path("status") { r =>
+            r.complete(Marshal(hooks.values).toResponseFor(r.request))
         }
 
     final def post(cfg: Config): Seq[Future[HttpResponse]] = post(cfg, publish)
