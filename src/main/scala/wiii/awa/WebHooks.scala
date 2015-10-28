@@ -11,20 +11,20 @@ import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import com.typesafe.config.Config
 import wiii.awa.WebHookProtocol._
+import wiii.awa.WebHooks._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-trait WebHooks extends WebApi {
-    import WebHooks._
 
+/**
+ * Mixin HTTP callbacks
+ */
+trait WebHooks extends WebApi {
     val hooks = collection.mutable.Map[UUID, HookSubscription]()
 
-    def endpointSub: String = "subscribe"
-    def endpointUnsub: String = "unsubscribe"
-
     val webhooks =
-        path(endpointSub) {
+        path(cfgOr(subKey, Defaults.defaultSub)) {
             (put & entity(as[HookConfigOpt])) { hookOpt =>
                 complete {
                     val sub = HookSubscription(UUID.randomUUID, hookOpt)
@@ -32,7 +32,7 @@ trait WebHooks extends WebApi {
                     Future {sub.id.toString}
                 }
             }
-        } ~ path(endpointUnsub) {
+        } ~ path(cfgOr(unsubKey, Defaults.defaultUnsub)) {
             (put & entity(as[HookUnsubscribe])) { unsub =>
                 complete {
                     hooks.get(unsub.id) match {
@@ -43,8 +43,10 @@ trait WebHooks extends WebApi {
                     }
                 }
             }
-        } ~ path("status") { r =>
-            r.complete(Marshal(hooks.values).toResponseFor(r.request))
+        } ~ path(cfgOr(statusKey, Defaults.defaultStatus)) {
+            get { r =>
+                r.complete(Marshal(hooks.values).toResponseFor(r.request))
+            }
         }
 
     final def post(cfg: Config): Seq[Future[HttpResponse]] = post(cfg, publish)
@@ -56,6 +58,16 @@ trait WebHooks extends WebApi {
 
 
 object WebHooks {
+    val subKey = "web.hooks.subscribe"
+    val unsubKey = "web.hooks.unsubscribe"
+    val statusKey = "web.hooks.status"
+
+    object Defaults {
+        val defaultSub = "subscribe"
+        val defaultUnsub = "unsubscribe"
+        val defaultStatus = "status"
+    }
+
     private def publish(r: HttpRequest)(implicit sys: ActorSystem, mat: ActorMaterializer): Future[HttpResponse] = {
         Http().singleRequest(r)
     }

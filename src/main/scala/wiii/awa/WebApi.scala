@@ -7,16 +7,23 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
+import wiii.awa.WebApi._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 
-object WebApi {
-    val cfg = "webapi"
-    val host = s"$cfg.host"
-    val port = s"$cfg.port"
-}
-
+/**
+ * Web interface mixin
+ *
+ * Configure with
+ * {
+ * webapi : {
+ * host : "hostname",
+ * port : portnumber
+ * }
+ * }
+ *
+ */
 trait WebApi {
     implicit def actorSystem: ActorSystem
     implicit def materializer: ActorMaterializer
@@ -25,9 +32,22 @@ trait WebApi {
     private var serverBinding: Option[Http.ServerBinding] = None
 
     def webstart(handler: Flow[HttpRequest, HttpResponse, Any]): Unit = {
-        val host: String = config.flatMap(_.getAs[String](WebApi.host)).getOrElse("localhost")
-        val port: Int = config.flatMap(_.getAs[Int](WebApi.port)).getOrElse(8080)
+        val host: String = cfgOr(hostKey, Defaults.host)
+        val port: Int = cfgOr(portKey, Defaults.port)
         Http().bindAndHandle(handler, host, port).onComplete(b => serverBinding = b.toOption)
     }
     def webstop(): Unit = serverBinding.foreach(_.unbind())
+    def cfgOr(cfgkey: String, or: String): String = config.flatMap(_.getAs[String](cfgkey)).getOrElse(or)
+    def cfgOr(cfgkey: String, or: Int): Int = config.flatMap(_.getAs[Int](cfgkey)).getOrElse(or)
+}
+
+object WebApi {
+    val webapiKey = "webapi"
+    val hostKey = s"$webapiKey.host"
+    val portKey = s"$webapiKey.port"
+
+    object Defaults {
+        val host = "localhost"
+        val port = 8080
+    }
 }
