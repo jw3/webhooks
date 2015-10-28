@@ -8,7 +8,9 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, _}
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.SchemeRejection
 import akka.stream.ActorMaterializer
+import wiii.awa.Interpolator._
 import wiii.awa.WebHookProtocol._
 import wiii.awa.WebHooks._
 
@@ -23,13 +25,18 @@ import scala.reflect.runtime.universe._
 trait WebHooks extends WebApi {
     val hooks = collection.mutable.Map[UUID, HookSubscription]()
 
-    val webhooks =
+    val webhookRoutes =
         path(cfgOr(subKey, Defaults.defaultSub)) {
-            (put & entity(as[HookConfigOpt])) { hookOpt =>
-                complete {
-                    val sub = HookSubscription(UUID.randomUUID, hookOpt)
-                    hooks(sub.id) = sub
-                    Future {sub.id.toString}
+            (put & entity(as[HookConfigOpt])) { hook =>
+                hook.host match {
+                    case host if validScheme(host) =>
+                        complete {
+                            val sub = HookSubscription(UUID.randomUUID, hook)
+                            hooks(sub.id) = sub
+                            Future {sub.id.toString}
+                        }
+                    case _ =>
+                        reject(SchemeRejection("<none>, http, https"))
                 }
             }
         } ~ path(cfgOr(unsubKey, Defaults.defaultUnsub)) {
@@ -72,11 +79,13 @@ object WebHooks {
     }
 
     def toRequest[T <: AnyRef : ClassTag : TypeTag](hook: HookConfig, t: T): HttpRequest = {
-        val data = Interpolator.interpolate(hook.body, t)
-        HttpRequest(method(hook), Uri.apply(s"http://${hook.host}:${hook.port}/${hook.path}"), entity = HttpEntity.apply(ContentTypes.`application/json`, data))
+        HttpRequest(method(hook), Uri.apply(s"http://${hook.host}:${hook.port}/${hook.path}"), entity = HttpEntity.apply(ContentTypes.`application/json`, interpolate(hook.body, t)))
     }
 
     def method(hook: HookConfig): HttpMethod = {
         HttpMethods.getForKeyCaseInsensitive(hook.method).getOrElse(HttpMethods.getForKey(HookConfig.Defaults.defaultMethod).get)
     }
+
+    // unspecified, http, and https schemes are accepted
+    def validScheme(s: String) = !s.contains("://") || s.startsWith("http://") || s.startsWith("https://")
 }

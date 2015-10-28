@@ -5,6 +5,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers._
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.typesafe.config.ConfigFactory
@@ -55,6 +56,13 @@ class CallbackSpec extends TestKit(ActorSystem(classOf[CallbackSpec].getSimpleNa
             clientProbe.expectNoMsg()
         }
     }
+    "server" should {
+        "reject invalid scheme" in {
+            val json = s"""{"host":"spark://localhost","port":$clientPort}"""
+            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, subscribeUri, entity = HttpEntity(ContentTypes.`application/json`, json)))
+            subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(materializer)(_)), 10 seconds)
+        }
+    }
 }
 
 object CallbackSpec {
@@ -69,7 +77,7 @@ object CallbackSpec {
 
 class Server extends Actor with ActorWebApi with WebHooks {
     override def config = cfg(serverPort)
-    override def preStart(): Unit = webstart(webhooks)
+    override def preStart(): Unit = webstart(webhookRoutes)
 
     def receive: Receive = {
         case Call() => post(ConfigFactory.parseString("{}"))

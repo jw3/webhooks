@@ -9,23 +9,29 @@ scalacOptions += "-target:jvm-1.8"
 resolvers += "jw3 at bintray" at "https://dl.bintray.com/jw3/maven"
 credentials += Credentials(Path.userHome / ".bintray" / ".credentials")
 
-libraryDependencies ++= Seq(
-    "org.scala-lang" % "scala-reflect" % "2.11.5",
+libraryDependencies ++= {
+    val akkaVersion = "2.4.0"
+    val akkaStreamVersion = "1.0"
 
-    "gpio4s" %% "gpiocfg" % "0.1",
+    Seq(
+        "org.scala-lang" % "scala-reflect" % "2.11.5",
 
-    "io.spray" %% "spray-json" % "1.3.2",
-    "com.typesafe" % "config" % "1.3.0",
-    "net.ceedubs" %% "ficus" % "1.1.2",
+        "gpio4s" %% "gpiocfg" % "0.1",
 
-    "com.typesafe.akka" %% "akka-actor" % "2.4.0",
-    "com.typesafe.akka" %% "akka-stream-experimental" % "1.0",
-    "com.typesafe.akka" %% "akka-http-experimental" % "1.0",
-    "com.typesafe.akka" %% "akka-http-core-experimental" % "1.0",
-    "com.typesafe.akka" %% "akka-http-xml-experimental" % "1.0",
-    "com.typesafe.akka" %% "akka-http-spray-json-experimental" % "1.0",
-    "com.typesafe.akka" %% "akka-slf4j" % "2.4.0" % Runtime,
+        "io.spray" %% "spray-json" % "1.3.2",
+        "com.typesafe" % "config" % "1.3.0",
+        "net.ceedubs" %% "ficus" % "1.1.2",
 
-    "org.scalatest" %% "scalatest" % "2.2.5" % Test,
-    "com.typesafe.akka" %% "akka-testkit" % "2.4.0" % Test
-)
+        "com.typesafe.akka" %% "akka-actor" % akkaVersion,
+        "com.typesafe.akka" %% "akka-stream-experimental" % akkaStreamVersion,
+        "com.typesafe.akka" %% "akka-http-experimental" % akkaStreamVersion,
+        "com.typesafe.akka" %% "akka-http-core-experimental" % akkaStreamVersion,
+        "com.typesafe.akka" %% "akka-http-xml-experimental" % akkaStreamVersion,
+        "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaStreamVersion,
+        "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % Runtime,
+
+        "org.scalatest" %% "scalatest" % "2.2.5" % Test,
+        "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
+        "com.typesafe.akka" %% "akka-http-testkit-experimental" % akkaStreamVersion % Test
+    )
+}
