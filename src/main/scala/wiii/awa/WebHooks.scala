@@ -9,13 +9,13 @@ import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, _}
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
-import com.typesafe.config.Config
 import wiii.awa.WebHookProtocol._
 import wiii.awa.WebHooks._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe._
 
 /**
  * Mixin HTTP callbacks
@@ -49,10 +49,9 @@ trait WebHooks extends WebApi {
             }
         }
 
-    final def post(cfg: Config): Seq[Future[HttpResponse]] = post(cfg, publish)
-    final def post(cfg: Config, pub: HttpRequest => Future[HttpResponse]): Seq[Future[HttpResponse]] = {
-        val data = cfg.root.render()
-        for (sub <- hooks.values.toList) yield pub(toRequest(sub.config, data))
+    final def post[T <: AnyRef : ClassTag : TypeTag](t: T): Seq[Future[HttpResponse]] = post(t, publish)
+    final def post[T <: AnyRef : ClassTag : TypeTag](t: T, pub: HttpRequest => Future[HttpResponse]): Seq[Future[HttpResponse]] = {
+        for (sub <- hooks.values.toList) yield pub(toRequest(sub.config, t))
     }
 }
 
@@ -72,7 +71,12 @@ object WebHooks {
         Http().singleRequest(r)
     }
 
-    def toRequest(hook: HookConfig, data: String = ""): HttpRequest = {
-        HttpRequest(HttpMethods.POST, Uri.apply(s"http://${hook.host}:${hook.port}/${hook.path}"), entity = HttpEntity.apply(ContentTypes.`application/json`, data))
+    def toRequest[T <: AnyRef : ClassTag : TypeTag](hook: HookConfig, t: T): HttpRequest = {
+        val data = Interpolator.interpolate(hook.body, t)
+        HttpRequest(method(hook), Uri.apply(s"http://${hook.host}:${hook.port}/${hook.path}"), entity = HttpEntity.apply(ContentTypes.`application/json`, data))
+    }
+
+    def method(hook: HookConfig): HttpMethod = {
+        HttpMethods.getForKeyCaseInsensitive(hook.method).getOrElse(HttpMethods.getForKey(HookConfig.Defaults.defaultMethod).get)
     }
 }

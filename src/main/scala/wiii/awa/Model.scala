@@ -2,6 +2,7 @@ package wiii.awa
 
 import java.util.UUID
 
+import akka.http.scaladsl.model.HttpMethods
 import wiii.awa.HookConfig.Defaults._
 
 
@@ -23,7 +24,7 @@ object HookConfig {
         val defaultPath = ""
         val defaultBody = ""
         val defaultSpan = "NONE"
-        val defaultMethod = "PUT"
+        val defaultMethod = HttpMethods.PUT.name
     }
 }
 

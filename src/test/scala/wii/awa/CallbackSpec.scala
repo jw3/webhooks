@@ -85,7 +85,7 @@ class Client(probe: TestProbe) extends Actor with ActorWebApi {
     }
 
     val webhooks =
-        post {
+        put {
             pathSingleSlash {
                 complete {
                     self ! OK()

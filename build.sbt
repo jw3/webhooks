@@ -10,6 +10,8 @@ resolvers += "jw3 at bintray" at "https://dl.bintray.com/jw3/maven"
 credentials += Credentials(Path.userHome / ".bintray" / ".credentials")
 
 libraryDependencies ++= Seq(
+    "org.scala-lang" % "scala-reflect" % "2.11.5",
+
     "gpio4s" %% "gpiocfg" % "0.1",
 
     "io.spray" %% "spray-json" % "1.3.2",
