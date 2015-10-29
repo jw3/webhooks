@@ -15,7 +15,7 @@ class WebHooksSpec extends FlatSpec with Matchers with ScalatestRouteTest with W
     override implicit val actorSystem: ActorSystem = ActorSystem("WebHooksSpec")
     override implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-    val subscribe = s"""{"host":"localhost"}"""
+    val subscribe = s"""{"host":"http://localhost"}"""
 
     "WebHooks" should "register new hooks" in {
         Put("/subscribe", JSON(subscribe)) ~> webhookRoutes ~> check {
