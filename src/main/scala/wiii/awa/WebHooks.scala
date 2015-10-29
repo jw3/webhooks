@@ -16,7 +16,6 @@ import wiii.awa.WebHooks._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
 
 /**
@@ -36,7 +35,7 @@ trait WebHooks extends WebApi {
                             Future {sub.id.toString}
                         }
                     case _ =>
-                        reject(SchemeRejection("<none>, http, https"))
+                        reject(SchemeRejection("http, https"))
                 }
             }
         } ~ path(cfgOr(unsubKey, Defaults.defaultUnsub)) {
@@ -56,8 +55,8 @@ trait WebHooks extends WebApi {
             }
         }
 
-    final def post[T <: AnyRef : ClassTag : TypeTag](t: T): Seq[Future[HttpResponse]] = post(t, publish)
-    final def post[T <: AnyRef : ClassTag : TypeTag](t: T, pub: HttpRequest => Future[HttpResponse]): Seq[Future[HttpResponse]] = {
+    final def post[T: TypeTag](t: T): Seq[Future[HttpResponse]] = post(t, publish(_))
+    final def post[T: TypeTag](t: T, pub: HttpRequest => Future[HttpResponse]): Seq[Future[HttpResponse]] = {
         for (sub <- hooks.values.toList) yield pub(toRequest(sub.config, t))
     }
 }
@@ -78,8 +77,8 @@ object WebHooks {
         Http().singleRequest(r)
     }
 
-    def toRequest[T <: AnyRef : ClassTag : TypeTag](hook: HookConfig, t: T): HttpRequest = {
-        HttpRequest(method(hook), Uri.apply(s"http://${hook.host}:${hook.port}/${hook.path}"), entity = HttpEntity.apply(ContentTypes.`application/json`, interpolate(hook.body, t)))
+    def toRequest[T: TypeTag](hook: HookConfig, t: T): HttpRequest = {
+        HttpRequest(method(hook), Uri.apply(s"${hook.host}:${hook.port}/${hook.path}"), entity = HttpEntity.apply(ContentTypes.`application/json`, interpolate(hook.body, t)))
     }
 
     def method(hook: HookConfig): HttpMethod = {
@@ -87,5 +86,5 @@ object WebHooks {
     }
 
     // unspecified, http, and https schemes are accepted
-    def validScheme(s: String) = !s.contains("://") || s.startsWith("http://") || s.startsWith("https://")
+    def validScheme(s: String) = s.startsWith("http://") || s.startsWith("https://")
 }

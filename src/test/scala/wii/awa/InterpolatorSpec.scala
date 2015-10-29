@@ -1,33 +1,47 @@
 package wii.awa
 
 import org.scalatest.{Matchers, WordSpec}
-import wii.awa.InterpolatorSpec.InetAddr
+import wii.awa.InterpolatorSpec._
 import wiii.awa.Interpolator._
 
 class InterpolatorSpec extends WordSpec with Matchers {
+
     "replacement" should {
         "work as expected" in {
-            val addr = InetAddr("localhost", 999)
-            val template = "hostname={{host}},port={{port}}"
-            interpolate(template, addr) shouldBe "hostname=localhost,port=999"
+            val template = "name={{name}}"
+            interpolate(template, HasName("Duffman")) shouldBe "name=Duffman"
         }
     }
     "empty template" should {
         "produce empty string" in {
-            val addr = InetAddr("localhost", 999)
             val template = ""
-            interpolate(template, addr) shouldBe empty
+            interpolate(template, HasName("Duffman")) shouldBe empty
         }
     }
-    "containing only a variable" should {
-        "result in only replacement text" in {
-            val addr = InetAddr("localhost", 999)
-            val template = "{{host}}"
-            interpolate(template, addr) shouldBe "localhost"
+    "plain text template" should {
+        "be unchanged" in {
+            val template = "some plain text"
+            interpolate(template, HasName("Duffman")) shouldBe template
+        }
+    }
+    "template with one variable" should {
+        "replace lone variable" in {
+            val template = "{{name}}"
+            interpolate(template, HasName("Duffman")) shouldBe "Duffman"
+        }
+        "result in empty string when variable is not available" in {
+            val template = "{{name}}"
+            interpolate(template, NoName()) shouldBe empty
+        }
+        "replace two variables" in {
+            val template = "{{fname}} {{lname}}"
+            interpolate(template, HasFirstAndLastName("Lionel", "Hutz")) shouldBe "Lionel Hutz"
         }
     }
 }
 
 object InterpolatorSpec {
-    case class InetAddr(host: String, port: Int)
+    case class NoName()
+    case class HasName(name: String)
+    case class HasFirstAndLastName(fname: String, lname: String)
 }
