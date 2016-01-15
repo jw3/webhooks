@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import com.typesafe.config.Config
+import com.typesafe.scalalogging.LazyLogging
 import net.ceedubs.ficus.Ficus._
 import wiii.awa.WebApi._
 
@@ -24,7 +25,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * }
  *
  */
-trait WebApi {
+trait WebApi extends LazyLogging {
     implicit def actorSystem: ActorSystem
     implicit def materializer: ActorMaterializer
 
@@ -34,7 +35,9 @@ trait WebApi {
     def webstart(handler: Flow[HttpRequest, HttpResponse, Any]): Unit = {
         val host: String = cfgOr(hostKey, Defaults.host)
         val port: Int = cfgOr(portKey, Defaults.port)
+        logger.info(s"${getClass.getName} web-api starting at [$host:$port]")
         Http().bindAndHandle(handler, host, port).onComplete(b => serverBinding = b.toOption)
+        logger.trace(s"${getClass.getName} web-api started")
     }
     def webstop(): Unit = serverBinding.foreach(_.unbind())
     def cfgOr(cfgkey: String, or: String): String = config.flatMap(_.getAs[String](cfgkey)).getOrElse(or)
