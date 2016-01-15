@@ -25,37 +25,38 @@ trait WebHooks extends WebApi {
     val hooks = collection.mutable.Map[UUID, HookSubscription]()
 
     val webhookRoutes =
-        path(cfgOr(subKey, Defaults.defaultSub)) {
+        path(cfgOr(subKey, defaultPath)) {
             (put & entity(as[HookConfigOpt])) { hook =>
                 hook.host match {
                     case host if validScheme(host) =>
                         complete {
                             val sub = HookSubscription(UUID.randomUUID, hook)
                             hooks(sub.id) = sub
-                            Future {sub.id.toString}
+                            sub.id.toString
                         }
                     case _ =>
                         reject(SchemeRejection("http, https"))
                 }
             }
-        } ~ path(cfgOr(unsubKey, Defaults.defaultUnsub)) {
-            (put & entity(as[HookUnsubscribe])) { unsub =>
+        } ~ path(cfgOr(unsubKey, defaultPath)) {
+            (delete & entity(as[HookUnsubscribe])) { unsub =>
                 complete {
                     hooks.get(unsub.id) match {
                         case Some(sub) =>
                             hooks.remove(sub.id)
-                            "OK"
-                        case _ => "error 001"
+                            StatusCodes.OK
+                        case _ =>
+                            StatusCodes.BadRequest
                     }
                 }
             }
-        } ~ path(cfgOr(statusKey, Defaults.defaultStatus)) {
+        } ~ path(cfgOr(statusKey, defaultPath)) {
             get { r =>
                 r.complete(Marshal(hooks.values).toResponseFor(r.request))
             }
         }
 
-    final def post[T: TypeTag](t: T): Seq[Future[HttpResponse]] = post(t, publish(_))
+    final def post[T: TypeTag](t: T): Seq[Future[HttpResponse]] = post(t, publish)
     final def post[T: TypeTag](t: T, pub: HttpRequest => Future[HttpResponse]): Seq[Future[HttpResponse]] = {
         for (sub <- hooks.values.toList) yield pub(toRequest(sub.config, t))
     }
@@ -66,12 +67,7 @@ object WebHooks {
     val subKey = "web.hooks.subscribe"
     val unsubKey = "web.hooks.unsubscribe"
     val statusKey = "web.hooks.status"
-
-    object Defaults {
-        val defaultSub = "subscribe"
-        val defaultUnsub = "unsubscribe"
-        val defaultStatus = "status"
-    }
+    val defaultPath = "hook"
 
     private def publish(r: HttpRequest)(implicit sys: ActorSystem, mat: ActorMaterializer): Future[HttpResponse] = {
         Http().singleRequest(r)

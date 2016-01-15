@@ -24,36 +24,35 @@ class CallbackSpec extends TestKit(ActorSystem(classOf[CallbackSpec].getSimpleNa
                            with ImplicitSender with WordSpecLike with Matchers {
 
     import wii.awa.CallbackSpec._
+    import wiii.awa.WebHooks._
 
     implicit val materializer = ActorMaterializer()
     val clientProbe = TestProbe()
     val client = system.actorOf(Client.props(clientProbe))
     val server = system.actorOf(Props[Server])
 
-    val subscribeUri = Uri(s"http://localhost:$serverPort/subscribe")
-    val unsubscribeUri = Uri(s"http://localhost:$serverPort/unsubscribe")
-    val statusUri = Uri(s"http://localhost:$serverPort/status")
+    val uri = Uri(s"http://localhost:$serverPort/$defaultPath")
     var subscription: String = _
 
     "client" should {
         "reigster callback" in {
             val json = s"""{"host":"http://localhost","port":$clientPort}"""
-            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, subscribeUri, entity = HttpEntity(ContentTypes.`application/json`, json)))
-            subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(materializer)(_)), 10 seconds)
+            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
+            subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
         }
         "be called back" in {
             server ! Call()
             clientProbe.expectMsgType[OK]
         }
         "get status" in {
-            val f = Http().singleRequest(HttpRequest(HttpMethods.GET, statusUri))
-            val status = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(materializer)(_)), 10 seconds)
+            val f = Http().singleRequest(HttpRequest(HttpMethods.GET, uri))
+            val status = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
             println(s"status:\n$status")
         }
         "be unsubscribed" in {
             val json = s"""{"id":"$subscription"}"""
-            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, unsubscribeUri, entity = HttpEntity(ContentTypes.`application/json`, json)))
-            val r = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(materializer)(_)), 10 seconds)
+            val f = Http().singleRequest(HttpRequest(HttpMethods.DELETE, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
+            val r = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
         }
         "not be called back" in {
             server ! Call()
@@ -63,16 +62,16 @@ class CallbackSpec extends TestKit(ActorSystem(classOf[CallbackSpec].getSimpleNa
     "server" should {
         "reject invalid scheme" in {
             val json = s"""{"host":"spark://localhost","port":$clientPort}"""
-            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, subscribeUri, entity = HttpEntity(ContentTypes.`application/json`, json)))
-            subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(materializer)(_)), 10 seconds)
+            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
+            subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
         }
     }
     "interpolation" should {
         "received formatted content" in {
             {
                 val json = s"""{"host":"http://localhost","port":$clientPort,"body":"{ \\"name\\":\\"{{name}}\\" }" }"""
-                val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, subscribeUri, entity = HttpEntity(ContentTypes.`application/json`, json)))
-                subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(materializer)(_)), 10 seconds)
+                val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
+                subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
             }
             val expected = UUID.randomUUID.toString
             server ! CallWithName(expected)
@@ -82,8 +81,8 @@ class CallbackSpec extends TestKit(ActorSystem(classOf[CallbackSpec].getSimpleNa
 
             {
                 val json = s"""{"id":"$subscription"}"""
-                val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, unsubscribeUri, entity = HttpEntity(ContentTypes.`application/json`, json)))
-                val r = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(materializer)(_)), 10 seconds)
+                val f = Http().singleRequest(HttpRequest(HttpMethods.DELETE, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
+                val r = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
             }
         }
     }
