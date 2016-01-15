@@ -11,6 +11,7 @@ import net.ceedubs.ficus.Ficus._
 import wiii.awa.WebApi._
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success}
 
 
 /**
@@ -39,7 +40,20 @@ trait WebApi extends LazyLogging {
         Http().bindAndHandle(handler, host, port).onComplete(b => serverBinding = b.toOption)
         logger.trace(s"${getClass.getName} web-api started")
     }
-    def webstop(): Unit = serverBinding.foreach(_.unbind())
+
+    def webstop(): Unit = {
+        serverBinding match {
+            case Some(binding) =>
+                binding.unbind().onComplete {
+                    case Success(_) => logger.debug("web-api shut down")
+                    case Failure(e) => logger.error("web-api shut down failed", e)
+                }
+
+            case None =>
+                logger.debug("web-api shut down failed.  was it ever started?")
+        }
+    }
+
     def cfgOr(cfgkey: String, or: String): String = config.flatMap(_.getAs[String](cfgkey)).getOrElse(or)
     def cfgOr(cfgkey: String, or: Int): Int = config.flatMap(_.getAs[Int](cfgkey)).getOrElse(or)
 }

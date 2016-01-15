@@ -10,6 +10,7 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, _}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.SchemeRejection
 import akka.stream.ActorMaterializer
+import com.typesafe.scalalogging.LazyLogging
 import wiii.awa.Interpolator._
 import wiii.awa.WebHookProtocol._
 import wiii.awa.WebHooks._
@@ -21,7 +22,7 @@ import scala.reflect.runtime.universe._
 /**
  * Mixin HTTP callbacks
  */
-trait WebHooks extends WebApi {
+trait WebHooks extends WebApi with LazyLogging {
     val hooks = collection.mutable.Map[UUID, HookSubscription]()
 
     val webhookRoutes =
@@ -31,6 +32,7 @@ trait WebHooks extends WebApi {
                     case host if validScheme(host) =>
                         complete {
                             val sub = HookSubscription(UUID.randomUUID, hook)
+                            logger.debug(s"added subscription $sub for $hook")
                             hooks(sub.id) = sub
                             sub.id.toString
                         }
@@ -43,6 +45,7 @@ trait WebHooks extends WebApi {
                 complete {
                     hooks.get(unsub.id) match {
                         case Some(sub) =>
+                            logger.debug(s"removing subscription ${sub.id} for ${sub.config}")
                             hooks.remove(sub.id)
                             StatusCodes.OK
                         case _ =>
@@ -58,6 +61,7 @@ trait WebHooks extends WebApi {
 
     final def post[T: TypeTag](t: T): Seq[Future[HttpResponse]] = post(t, publish)
     final def post[T: TypeTag](t: T, pub: HttpRequest => Future[HttpResponse]): Seq[Future[HttpResponse]] = {
+        logger.debug(s"posting $t")
         for (sub <- hooks.values.toList) yield pub(toRequest(sub.config, t))
     }
 }
