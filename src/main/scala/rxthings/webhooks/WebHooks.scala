@@ -1,4 +1,4 @@
-package wiii.awa
+package rxthings.webhooks
 
 import java.util.UUID
 
@@ -11,9 +11,9 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.SchemeRejection
 import akka.stream.ActorMaterializer
 import com.typesafe.scalalogging.LazyLogging
-import wiii.awa.Interpolator._
-import wiii.awa.WebHookProtocol._
-import wiii.awa.WebHooks._
+import rxthings.webhooks.Interpolator._
+import rxthings.webhooks.WebHookProtocol._
+import rxthings.webhooks.WebHooks._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

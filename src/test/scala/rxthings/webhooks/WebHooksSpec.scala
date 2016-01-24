@@ -1,4 +1,4 @@
-package wii.awa
+package rxthings.webhooks
 
 import java.util.UUID
 
@@ -9,8 +9,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.ActorMaterializer
 import org.scalatest.{FlatSpec, Matchers}
-import wii.awa.WebHooksSpec._
-import wiii.awa.WebHooks
+import rxthings.webhooks.WebHooksSpec._
 
 
 class WebHooksSpec extends FlatSpec with Matchers with ScalatestRouteTest with WebHooks {

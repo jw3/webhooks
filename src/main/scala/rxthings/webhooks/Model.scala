@@ -1,9 +1,9 @@
-package wiii.awa
+package rxthings.webhooks
 
 import java.util.UUID
 
 import akka.http.scaladsl.model.HttpMethods
-import wiii.awa.HookConfig.Defaults._
+import rxthings.webhooks.HookConfig.Defaults._
 
 
 case class HookSubscription(id: UUID, config: HookConfig)

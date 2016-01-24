@@ -1,8 +1,8 @@
-package wii.awa
+package rxthings.webhooks
 
 import org.scalatest.{Matchers, WordSpec}
-import wii.awa.InterpolatorSpec._
-import wiii.awa.Interpolator._
+import rxthings.webhooks.Interpolator._
+import rxthings.webhooks.InterpolatorSpec._
 
 class InterpolatorSpec extends WordSpec with Matchers {
 

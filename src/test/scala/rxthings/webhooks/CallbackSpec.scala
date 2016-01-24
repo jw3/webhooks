@@ -1,4 +1,4 @@
-package wii.awa
+package rxthings.webhooks
 
 import java.util.UUID
 
@@ -12,8 +12,7 @@ import akka.stream.ActorMaterializer
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{Matchers, WordSpecLike}
-import spray.json.DefaultJsonProtocol
-import wiii.awa.{ActorWebApi, WebHooks}
+import spray.json
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -23,8 +22,8 @@ import scala.concurrent.duration.DurationInt
 class CallbackSpec extends TestKit(ActorSystem(classOf[CallbackSpec].getSimpleName.dropRight(1)))
                            with ImplicitSender with WordSpecLike with Matchers {
 
-    import wii.awa.CallbackSpec._
-    import wiii.awa.WebHooks._
+    import rxthings.webhooks.CallbackSpec._
+    import rxthings.webhooks.WebHooks._
 
     implicit val materializer = ActorMaterializer()
     val clientProbe = TestProbe()
@@ -88,7 +87,7 @@ class CallbackSpec extends TestKit(ActorSystem(classOf[CallbackSpec].getSimpleNa
     }
 }
 
-object CallbackSpec extends DefaultJsonProtocol with SprayJsonSupport {
+object CallbackSpec extends json.DefaultJsonProtocol with SprayJsonSupport {
     val serverPort = 9999
     val clientPort = 8888
 
@@ -104,7 +103,7 @@ object CallbackSpec extends DefaultJsonProtocol with SprayJsonSupport {
 }
 
 class Server extends Actor with ActorWebApi with WebHooks {
-    import wii.awa.CallbackSpec._
+    import CallbackSpec._
 
     override def config = cfg(serverPort)
     override def preStart(): Unit = webstart(webhookRoutes)
@@ -116,7 +115,7 @@ class Server extends Actor with ActorWebApi with WebHooks {
 }
 
 class Client(probe: TestProbe) extends Actor with ActorWebApi {
-    import wii.awa.CallbackSpec._
+    import CallbackSpec._
 
     override def config = cfg(clientPort)
     override def preStart(): Unit = webstart(webhooks)

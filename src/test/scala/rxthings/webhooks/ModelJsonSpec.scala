@@ -1,9 +1,8 @@
-package wii.awa
+package rxthings.webhooks
 
 import org.scalatest.{FlatSpec, Matchers}
+import rxthings.webhooks.WebHookProtocol._
 import spray.json._
-import wiii.awa.HookConfig
-import wiii.awa.WebHookProtocol._
 
 class ModelJsonSpec extends FlatSpec with Matchers {
     "Hook" should "roundtrip" in {

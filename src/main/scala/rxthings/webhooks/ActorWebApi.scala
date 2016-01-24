@@ -1,4 +1,4 @@
-package wiii.awa
+package rxthings.webhooks
 
 import akka.actor.Actor
 import akka.stream.ActorMaterializer

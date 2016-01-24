@@ -1,4 +1,4 @@
-package wiii.awa
+package rxthings.webhooks
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -8,7 +8,7 @@ import akka.stream.scaladsl.Flow
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 import net.ceedubs.ficus.Ficus._
-import wiii.awa.WebApi._
+import rxthings.webhooks.WebApi._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
