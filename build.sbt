@@ -1,6 +1,6 @@
 organization := "com.rxthings"
 name := "webhooks"
-version := "0.4-SNAPSHOT"
+version := "0.5-SNAPSHOT"
 licenses +=("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 scalaVersion := "2.11.7"
