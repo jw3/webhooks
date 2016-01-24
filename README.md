@@ -1,8 +1,8 @@
-Akka WebHooks
+WebHooks with Akka HTTP
 ==========================
-[![Build Status](https://travis-ci.org/jw3/awebapi.svg?branch=master)](https://travis-ci.org/jw3/awebapi)
+[![Build Status](https://travis-ci.org/jw3/webhooks.svg?branch=master)](https://travis-ci.org/jw3/webhooks)
 
-WebHook API using Akka HTTP
+Mixins for adding web hooks.
 
 ## Subscription API
 
@@ -11,7 +11,26 @@ A set of endpoints are provided to
 - Unsubscribe (DELETE)
 - View subscriptions (GET)
 
-The path to the endpoints default to /hook
+The path to the endpoints are configurable, defaulting to /hook
+
+#### Subscribe
+
+Params
+  - host: String - callback hostname or ip
+  - port: Int    - callback port number
+  - path: String - path of callback on host
+  - body: String - message to call back with (supports interpolation)
+  - span: String - time to live for this hook (not implemented)
+  - method: String - callback http method
+
+Returns
+  - uuid: String - id of subscription
+
+#### Unsubscribe
+
+Params
+  - id: String
+
 
 ## Response Interpolation
 
@@ -19,6 +38,12 @@ The subscription can specify a body that will be used in callbacks.
 The body can escape values that will be interpolated from the scope of the fired event on the server side.
 
 todo;; example
+
+## Hook TTL (todo)
+
+Hooks can have a time to live set, which can be a length of time, number of invocations, or a composite
+
+```"2x" | "30s" | "2x|30s"```
 
 ## Using this library
 
@@ -28,12 +53,12 @@ Add a resolver to your sbt build
 
 Add dependency
 
-```"wiii" %% "awebapi" % "0.2"```
+```"com.rxthings" %% "webhooks" % "0.4"```
 
 
 ## Bugs and Feedback
 
-For bugs, questions and discussions please use the [Github Issues](https://github.com/jw3/awebapi/issues).
+For bugs, questions and discussions please use the [Github Issues](https://github.com/jw3/webhooks/issues).
 
 ## LICENSE
 
