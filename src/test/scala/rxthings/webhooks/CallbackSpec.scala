@@ -22,124 +22,124 @@ import scala.concurrent.duration.DurationInt
 class CallbackSpec extends TestKit(ActorSystem(classOf[CallbackSpec].getSimpleName.dropRight(1)))
                            with ImplicitSender with WordSpecLike with Matchers {
 
-    import rxthings.webhooks.CallbackSpec._
-    import rxthings.webhooks.WebHooks._
+  import rxthings.webhooks.CallbackSpec._
+  import rxthings.webhooks.WebHooks._
 
-    implicit val materializer = ActorMaterializer()
-    val clientProbe = TestProbe()
-    val client = system.actorOf(Client.props(clientProbe))
-    val server = system.actorOf(Props[Server])
+  implicit val materializer = ActorMaterializer()
+  val clientProbe = TestProbe()
+  val client = system.actorOf(Client.props(clientProbe))
+  val server = system.actorOf(Props[Server])
 
-    val uri = Uri(s"http://localhost:$serverPort/$defaultPath")
-    var subscription: String = _
+  val uri = Uri(s"http://localhost:$serverPort/$defaultPath")
+  var subscription: String = _
 
-    "client" should {
-        "reigster callback" in {
-            val json = s"""{"host":"http://localhost","port":$clientPort}"""
-            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
-            subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
-        }
-        "be called back" in {
-            server ! Call()
-            clientProbe.expectMsgType[OK]
-        }
-        "get status" in {
-            val f = Http().singleRequest(HttpRequest(HttpMethods.GET, uri))
-            val status = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
-            println(s"status:\n$status")
-        }
-        "be unsubscribed" in {
-            val json = s"""{"id":"$subscription"}"""
-            val f = Http().singleRequest(HttpRequest(HttpMethods.DELETE, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
-            val r = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
-        }
-        "not be called back" in {
-            server ! Call()
-            clientProbe.expectNoMsg()
-        }
+  "client" should {
+    "reigster callback" in {
+      val json = s"""{"host":"http://localhost","port":$clientPort}"""
+      val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
+      subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
     }
-    "server" should {
-        "reject invalid scheme" in {
-            val json = s"""{"host":"spark://localhost","port":$clientPort}"""
-            val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
-            subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
-        }
+    "be called back" in {
+      server ! Call()
+      clientProbe.expectMsgType[OK]
     }
-    "interpolation" should {
-        "received formatted content" in {
-            {
-                val json = s"""{"host":"http://localhost","port":$clientPort,"body":"{ \\"name\\":\\"{{name}}\\" }" }"""
-                val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
-                subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
-            }
-            val expected = UUID.randomUUID.toString
-            server ! CallWithName(expected)
-            clientProbe.expectMsgPF(10 seconds) {
-                case OKWithName(name) if name == expected =>
-            }
+    "get status" in {
+      val f = Http().singleRequest(HttpRequest(HttpMethods.GET, uri))
+      val status = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
+      println(s"status:\n$status")
+    }
+    "be unsubscribed" in {
+      val json = s"""{"id":"$subscription"}"""
+      val f = Http().singleRequest(HttpRequest(HttpMethods.DELETE, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
+      val r = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
+    }
+    "not be called back" in {
+      server ! Call()
+      clientProbe.expectNoMsg()
+    }
+  }
+  "server" should {
+    "reject invalid scheme" in {
+      val json = s"""{"host":"spark://localhost","port":$clientPort}"""
+      val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
+      subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
+    }
+  }
+  "interpolation" should {
+    "received formatted content" in {
+      {
+        val json = s"""{"host":"http://localhost","port":$clientPort,"body":"{ \\"name\\":\\"{{name}}\\" }" }"""
+        val f = Http().singleRequest(HttpRequest(HttpMethods.PUT, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
+        subscription = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
+      }
+      val expected = UUID.randomUUID.toString
+      server ! CallWithName(expected)
+      clientProbe.expectMsgPF(10 seconds) {
+        case OKWithName(name) if name == expected =>
+      }
 
-            {
-                val json = s"""{"id":"$subscription"}"""
-                val f = Http().singleRequest(HttpRequest(HttpMethods.DELETE, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
-                val r = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
-            }
-        }
+      {
+        val json = s"""{"id":"$subscription"}"""
+        val f = Http().singleRequest(HttpRequest(HttpMethods.DELETE, uri, entity = HttpEntity(ContentTypes.`application/json`, json)))
+        val r = Await.result(f.map(_.entity).flatMap(stringUnmarshaller(_)), 10 seconds)
+      }
     }
+  }
 }
 
 object CallbackSpec extends json.DefaultJsonProtocol with SprayJsonSupport {
-    val serverPort = 9999
-    val clientPort = 8888
+  val serverPort = 9999
+  val clientPort = 8888
 
-    case class OK()
-    case class OKWithName(name: String)
+  case class OK()
+  case class OKWithName(name: String)
 
-    case class Call()
-    case class CallWithName(val name: String)
+  case class Call()
+  case class CallWithName(val name: String)
 
-    implicit val OKWithNameJsonSupport = jsonFormat1(OKWithName)
+  implicit val OKWithNameJsonSupport = jsonFormat1(OKWithName)
 
-    def cfg(p: Int) = Option(ConfigFactory.parseString(s"webapi.port=$p"))
+  def cfg(p: Int) = Option(ConfigFactory.parseString(s"webapi.port=$p"))
 }
 
 class Server extends Actor with ActorWebApi with WebHooks {
-    import CallbackSpec._
+  import CallbackSpec._
 
-    override def config = cfg(serverPort)
-    override def preStart(): Unit = webstart(webhookRoutes)
+  override def config = cfg(serverPort)
+  override def preStart(): Unit = webstart(webhookRoutes)
 
-    def receive: Receive = {
-        case m: Call => post(m)
-        case m: CallWithName => post(m)
-    }
+  def receive: Receive = {
+    case m: Call => post(m)
+    case m: CallWithName => post(m)
+  }
 }
 
 class Client(probe: TestProbe) extends Actor with ActorWebApi {
-    import CallbackSpec._
+  import CallbackSpec._
 
-    override def config = cfg(clientPort)
-    override def preStart(): Unit = webstart(webhooks)
+  override def config = cfg(clientPort)
+  override def preStart(): Unit = webstart(webhooks)
 
-    def receive: Receive = {
-        case m => probe.ref ! m
-    }
+  def receive: Receive = {
+    case m => probe.ref ! m
+  }
 
-    val webhooks =
-        pathSingleSlash {
-            (put & entity(as[OKWithName])) { b =>
-                complete {
-                    self ! b
-                    "OK"
-                }
-            } ~ put {
-                complete {
-                    self ! OK()
-                    "OK"
-                }
-            }
+  val webhooks =
+    pathSingleSlash {
+      (put & entity(as[OKWithName])) { b =>
+        complete {
+          self ! b
+          "OK"
         }
+      } ~ put {
+        complete {
+          self ! OK()
+          "OK"
+        }
+      }
+    }
 }
 
 object Client {
-    def props(probe: TestProbe) = Props(new Client(probe))
+  def props(probe: TestProbe) = Props(new Client(probe))
 }

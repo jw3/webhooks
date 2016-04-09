@@ -19,13 +19,13 @@ case class HookConfig(host: String,
 
 
 object HookConfig {
-    object Defaults {
-        val defaultPort = 8080
-        val defaultPath = ""
-        val defaultBody = ""
-        val defaultSpan = "NONE"
-        val defaultMethod = HttpMethods.PUT.name
-    }
+  object Defaults {
+    val defaultPort = 8080
+    val defaultPath = ""
+    val defaultBody = ""
+    val defaultSpan = "NONE"
+    val defaultMethod = HttpMethods.PUT.name
+  }
 }
 
 
@@ -37,11 +37,11 @@ case class HookConfigOpt(host: String,
                          method: Option[String])
 
 object HookConfigOpt {
-    import HookConfig.Defaults._
+  import HookConfig.Defaults._
 
-    implicit def opt2HookConfig(opt: HookConfigOpt): HookConfig = {
-        HookConfig(opt.host, or(opt.port, defaultPort), or(opt.path, defaultPath), or(opt.body, defaultBody), or(opt.span, defaultSpan), or(opt.method, defaultMethod))
-    }
+  implicit def opt2HookConfig(opt: HookConfigOpt): HookConfig = {
+    HookConfig(opt.host, or(opt.port, defaultPort), or(opt.path, defaultPath), or(opt.body, defaultBody), or(opt.span, defaultSpan), or(opt.method, defaultMethod))
+  }
 
-    private def or[T](lhs: Option[T], rhs: T) = lhs.getOrElse(rhs)
+  private def or[T](lhs: Option[T], rhs: T) = lhs.getOrElse(rhs)
 }

@@ -8,6 +8,6 @@ import akka.stream.ActorMaterializer
  * Conveniently provides assignment of the ActorSystem and ActorMaterializer
  */
 trait ActorWebApi extends Actor with WebApi {
-    implicit val actorSystem = context.system
-    implicit val materializer = ActorMaterializer()
+  implicit val actorSystem = context.system
+  implicit val materializer = ActorMaterializer()
 }
