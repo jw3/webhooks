@@ -1,8 +1,8 @@
-WebHooks with Akka HTTP
+WebHooks with Akka
 ==========================
 [![Build Status](https://travis-ci.org/jw3/webhooks.svg?branch=master)](https://travis-ci.org/jw3/webhooks)
 
-Mixins for adding web hooks.
+Mixins for adding web hooks using Akka HTTP.
 
 ## Subscription API
 
@@ -16,20 +16,20 @@ The path to the endpoints are configurable, defaulting to /hook
 #### Subscribe
 
 Params
-  - host: String - callback hostname or ip
-  - port: Int    - callback port number
-  - path: String - path of callback on host
-  - body: String - message to call back with (supports interpolation)
-  - span: String - time to live for this hook (not implemented)
-  - method: String - callback http method
+  - `host`: String - callback hostname or ip
+  - `port`: Int    - callback port number
+  - `path`: String - path of callback on host
+  - `body`: String - message to call back with (supports interpolation)
+  - `span`: String - time to live for this hook (not implemented)
+  - `method`: String - callback http method
 
 Returns
-  - uuid: String - id of subscription
+  - `uuid`: String - id of subscription
 
 #### Unsubscribe
 
 Params
-  - id: String
+  - `id`: String
 
 
 ## Response Interpolation
@@ -39,13 +39,13 @@ The body can escape values that will be interpolated from the scope of the fired
 
 todo;; example
 
-## Hook TTL (todo)
+## Hook TTL *(todo)*
 
 Hooks can have a time to live set, which can be a length of time, number of invocations, or a composite
 
 ```"2x" | "30s" | "2x|30s"```
 
-## Using this library
+## Artifacts
 
 Add a resolver to your sbt build
 
@@ -53,7 +53,7 @@ Add a resolver to your sbt build
 
 Add dependency
 
-```"com.rxthings" %% "webhooks" % "0.4"```
+```"com.rxthings" %% "webhooks" % "0.5"```
 
 
 ## Bugs and Feedback
