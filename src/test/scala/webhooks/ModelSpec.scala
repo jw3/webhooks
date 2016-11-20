@@ -1,10 +1,11 @@
-package rxthings.webhooks
+package webhooks
 
 import org.scalatest.{FlatSpec, Matchers}
-import rxthings.webhooks.WebHookProtocol._
 import spray.json._
+import webhooks.models.HookConfig
+import webhooks.protocols._
 
-class ModelJsonSpec extends FlatSpec with Matchers {
+class ModelSpec extends FlatSpec with Matchers {
   "Hook" should "roundtrip" in {
     val hook = HookConfig("localhost")
     val json = hook.toJson

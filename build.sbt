@@ -1,35 +1,55 @@
-organization := "com.rxthings"
+organization := "com.github.jw3"
 name := "webhooks"
-version := "0.6-SNAPSHOT"
+version := "1.0.0-SNAPSHOT"
 licenses +=("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))
 
-scalaVersion := "2.11.7"
-scalacOptions += "-target:jvm-1.8"
+scalaVersion := "2.11.8"
+scalacOptions ++= Seq(
+  "-target:jvm-1.8",
+  "-encoding", "UTF-8",
 
-resolvers += "jw3 at bintray" at "https://dl.bintray.com/jw3/maven"
+  "-feature",
+  "-unchecked",
+  "-deprecation",
+
+  "-language:postfixOps",
+  "-language:implicitConversions",
+
+  "-Ywarn-unused-import",
+  "-Xfatal-warnings",
+  "-Xlint:_"
+)
+
+resolvers ++= Seq(
+  Resolver.bintrayRepo("jw3", "maven"),
+  Resolver.bintrayRepo("iheartradio", "maven"),
+  Resolver.bintrayRepo("elderresearch", "OSS")
+)
 
 libraryDependencies ++= {
-  val akkaVersion = "2.4.2"
+  val akkaVersion = "2.4.12"
+  val akkaHttpVersion = "2.4.11"
+  val scalatestVersion = "3.0.0"
 
   Seq(
-    "gpio4s" %% "gpiocfg" % "0.1",
+    "org.scala-lang" % "scala-compiler" % "2.11.8",
 
-    "io.spray" %% "spray-json" % "1.3.2",
-    "com.typesafe" % "config" % "1.3.0",
-    "net.ceedubs" %% "ficus" % "1.1.2",
+    "com.iheart" %% "ficus" % "1.2.6",
+    "com.elderresearch" %% "ssc" % "0.2.0",
 
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
-    "com.typesafe.akka" %% "akka-http-core" % akkaVersion,
 
-    "com.typesafe.akka" %% "akka-http-experimental" % akkaVersion,
-    "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaVersion,
+    "com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-http-experimental" % akkaHttpVersion,
+    "com.typesafe.akka" %% "akka-http-spray-json-experimental" % akkaHttpVersion,
 
     "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0",
-    "com.typesafe.akka" %% "akka-slf4j" % akkaVersion % Runtime,
 
-    "org.scalatest" %% "scalatest" % "2.2.5" % Test,
+    "org.scalactic" %% "scalactic" % scalatestVersion % Test,
+    "org.scalatest" %% "scalatest" % scalatestVersion % Test,
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
-    "com.typesafe.akka" %% "akka-http-testkit" % akkaVersion % Test
+    "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
+    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % Test
   )
 }
