@@ -20,7 +20,11 @@ scalacOptions ++= Seq(
   "-Xlint:_"
 )
 
-resolvers += "jw3 at bintray" at "https://dl.bintray.com/jw3/maven"
+resolvers ++= Seq(
+  Resolver.bintrayRepo("jw3", "maven"),
+  Resolver.bintrayRepo("iheartradio", "maven"),
+  Resolver.bintrayRepo("elderresearch", "OSS")
+)
 
 libraryDependencies ++= {
   val akkaVersion = "2.4.12"
