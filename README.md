@@ -2,11 +2,14 @@ WebHooks with Akka
 ==========================
 [![Build Status](https://travis-ci.org/jw3/webhooks.svg?branch=master)](https://travis-ci.org/jw3/webhooks)
 
-Mixins for adding web hooks using Akka HTTP.
+Webhooks APIs for Actors and REST base on interpolation of system events into the predefined body of an http entity.
 
-## Subscription API
+Subscribers provide a message template and at least one event topic to subscribe to.  When the event type is received the public interface of the event is used to populate the subscription message body using the templated and interpolation.
 
-A set of endpoints are provided to
+## Actor Subscription API
+
+## HTTP Subscription API
+
 - Subscribe (PUT)
 - Unsubscribe (DELETE)
 - View subscriptions (GET)
@@ -39,22 +42,21 @@ The body can escape values that will be interpolated from the scope of the fired
 
 todo;; example
 
-## Hook TTL *(todo)*
+## Hook Time to Live (TTL)
 
-Hooks can have a time to live set, which can be a length of time, number of invocations, or a composite
+Hooks can have a TTL set, which can be a length of time, number of invocations, or a composite
 
 ```"2x" | "30s" | "2x|30s"```
 
-## Artifacts
+## Using this library
 
-Add a resolver to your sbt build
+Add the resolver
 
 ```resolvers += "jw3 at bintray" at "https://dl.bintray.com/jw3/maven"```
 
-Add dependency
+Add the dependency
 
-```"com.rxthings" %% "webhooks" % "0.5"```
-
+```"com.github.jw3" %% "webhooks" % "0.6"```
 
 ## Bugs and Feedback
 

@@ -1,8 +1,8 @@
-package rxthings.webhooks
+package webhooks
 
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe._
-import scala.reflect.runtime.{currentMirror => m}
+import scala.reflect.runtime.{currentMirror ⇒ m}
 
 /**
  * Simple string interpolation using the scope of the passed object
