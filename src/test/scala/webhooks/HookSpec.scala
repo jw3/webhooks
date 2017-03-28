@@ -7,7 +7,7 @@ import akka.stream.ActorMaterializer
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import akka.util.Timeout
 import org.scalatest.{EitherValues, Matchers, WordSpecLike}
-import webhooks.Hook.Start
+import webhooks.Hook.{NoBody, Start}
 import webhooks.HookSpec._
 import webhooks.models.HookConfig
 
@@ -23,19 +23,24 @@ class HookSpec extends TestKit(ActorSystem()) with WordSpecLike with Matchers wi
   implicit val to = Timeout(10 seconds)
 
 
-  "foo" should {
-    "bar" when {
-      "baz" in {
-        val probe = TestProbe()
-        val svc = testService(probe.ref)
-        val cfg = testCfg(body = "{{id}}", "webhooks.TestingCC")
-        val hook = testHook(cfg, svc)
+  "hook" should {
+    "callback" when {
+      val probe = TestProbe()
+      val svc = testService(probe.ref)
+      val cfg = testCfg(body = "{{id}}", "webhooks.TestingCC")
+      val hook = testHook(cfg, svc)
 
-        hook ! Start
+      hook ! Start
 
+      "with body" in {
         val id = "bam"
         hook ! TestingCC(id)
         probe.expectMsg(id)
+      }
+
+      "without body" in {
+        hook ! NoBody
+        probe.expectMsg(NoBody)
       }
     }
   }
@@ -58,7 +63,9 @@ object HookSpec {
       post {
         extractRequest { r ⇒
           extractStrictEntity(10 seconds) { e ⇒
-            ref ! e.data.utf8String
+            val bs = e.data.utf8String
+            if (bs.nonEmpty) ref ! bs
+            else ref ! NoBody
             complete(StatusCodes.OK)
           }
         }
