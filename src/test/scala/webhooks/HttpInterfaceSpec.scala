@@ -25,7 +25,7 @@ class HttpInterfaceSpec extends TestKit(ActorSystem()) with WordSpecLike with Ma
 
   "client" should {
     "reigster callback" in {
-      streams.put(endpoint).mapAsync(1)(r ⇒ Marshal(HookConfig("http://localhost")).to[RequestEntity].map(r.withEntity)).via(conn).runWith(Sink.ignore)
+      streams.put(endpoint).mapAsync(1)(r ⇒ Marshal(HookConfigOpt("http://localhost")).to[RequestEntity].map(r.withEntity)).via(conn).runWith(Sink.ignore)
 
       probe.expectMsgPF() {
         case CreateHook(_, _) ⇒

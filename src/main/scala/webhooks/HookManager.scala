@@ -9,7 +9,7 @@ import webhooks.models._
 object HookManager {
   def props()(implicit mat: ActorMaterializer) = Props(new HookManager)
 
-  case class CreateHook(id: String, cfg: HookConfig)
+  case class CreateHook(id: String, cfg: HookConfigOpt)
   case class DeleteHook(id: String)
   case class UpdateHook()
 
@@ -23,9 +23,8 @@ object HookManager {
 
 class HookManager(implicit mat: ActorMaterializer) extends Actor with ActorLogging {
   def receive: Receive = {
-    case CreateHook(id, cfg) ⇒
-      val hook = context.actorOf(Hook.props(), id)
-      hook ! cfg
+    case CreateHook(id, opt) ⇒
+      val hook = context.actorOf(Hook.props(HookConfig(opt)), id)
       sender ! HookCreated(id, hook)
 
     case DeleteHook(id) ⇒

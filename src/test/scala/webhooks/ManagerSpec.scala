@@ -18,7 +18,7 @@ class ManagerSpec extends TestKit(ActorSystem()) with WordSpecLike with Matchers
     val id = UUID.randomUUID.toString
 
     "register" in {
-      val cfg = HookConfig("http://localhost")
+      val cfg = HookConfigOpt("http://localhost")
       mgr ! CreateHook(id, cfg)
       expectMsgType[HookCreated]
     }

@@ -60,8 +60,8 @@ class HttpInterface(mgr: ActorRef)(implicit mat: ActorMaterializer) extends Acto
       (get & path(Segment)) { id ⇒
         complete(StatusCodes.NotImplemented)
       } ~
-      (put & entity(as[HookConfigOpt])) { cfg ⇒
-        onComplete(mgr ? CreateHook(uid(), cfg)) {
+      (put & entity(as[HookConfigOpt])) { opt ⇒
+        onComplete(mgr ? CreateHook(uid(), opt)) {
           case Success(HookCreated(id, _)) ⇒ complete(id)
           case _ ⇒ complete(StatusCodes.InternalServerError)
         }

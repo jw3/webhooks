@@ -19,12 +19,10 @@ The path to the endpoints are configurable, defaulting to /hook
 #### Subscribe
 
 Params
-  - `host`: String - callback hostname or ip
-  - `port`: Int    - callback port number
-  - `path`: String - path of callback on host
-  - `body`: String - message to call back with (supports interpolation)
-  - `span`: String - time to live for this hook (not implemented)
+  - `url`: String  - uri for callback
   - `method`: String - callback http method
+  - `body`: String - message to call back with (supports interpolation)
+  - `topics`: List[String] - fqcn list of events to listen for
 
 Returns
   - `uuid`: String - id of subscription
@@ -42,7 +40,7 @@ The body can escape values that will be interpolated from the scope of the fired
 
 todo;; example
 
-## Hook Time to Live (TTL)
+## Hook Time to Live (TTL) (todo)
 
 Hooks can have a TTL set, which can be a length of time, number of invocations, or a composite
 
