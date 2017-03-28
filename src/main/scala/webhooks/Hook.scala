@@ -1,5 +1,6 @@
 package webhooks
 
+import akka.actor.Actor.ignoringBehavior
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
@@ -12,7 +13,6 @@ import webhooks.models._
 object Hook {
   def props(hook: HookConfig)(implicit mat: ActorMaterializer): Props = Props(new Hook(hook))
 
-  case object Start
   case object NoBody
   case class Body(payload: String)
 }
@@ -20,13 +20,9 @@ object Hook {
 class Hook(hook: HookConfig)(implicit mat: ActorMaterializer) extends Actor with ActorLogging {
   import context.system
 
-  def inactive: Receive = {
-    case Start ⇒
-      val topics = hook.topics.map(Class.forName)
-      context.become(compile(topics: _*)(self, hook.body.getOrElse("")).orElse(nospan))
-  }
+  context.become(compile(hook.topics.map(Class.forName): _*)(self, hook.body.getOrElse("")).orElse(default))
 
-  def nospan: Receive = {
+  def default: Receive = {
     case NoBody ⇒ callback(Uri(hook.url))
     case Body(t) ⇒ callback(Uri(hook.url),
       _.withEntity(HttpEntity.apply(ContentTypes.`application/json`, t))
@@ -45,5 +41,5 @@ class Hook(hook: HookConfig)(implicit mat: ActorMaterializer) extends Actor with
     else Http().outgoingConnection(host, port)
   }
 
-  def receive: Receive = inactive
+  def receive: Receive = ignoringBehavior
 }

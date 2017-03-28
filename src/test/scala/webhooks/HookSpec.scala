@@ -7,7 +7,7 @@ import akka.stream.ActorMaterializer
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import akka.util.Timeout
 import org.scalatest.{EitherValues, Matchers, WordSpecLike}
-import webhooks.Hook.{NoBody, Start}
+import webhooks.Hook.NoBody
 import webhooks.HookSpec._
 import webhooks.models.HookConfig
 
@@ -29,8 +29,6 @@ class HookSpec extends TestKit(ActorSystem()) with WordSpecLike with Matchers wi
       val svc = testService(probe.ref)
       val cfg = testCfg(body = "{{id}}", "webhooks.TestingCC")
       val hook = testHook(cfg, svc)
-
-      hook ! Start
 
       "with body" in {
         val id = "bam"
