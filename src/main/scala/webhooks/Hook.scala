@@ -34,11 +34,11 @@ class Hook(hook: HookConfig)(implicit mat: ActorMaterializer) extends Actor with
       case Body(t) ⇒
         streams.request(uri.nonEmptyPath)(r =>
           Future.successful(r.withMethod(hook.method).withEntity(HttpEntity.apply(ContentTypes.`application/json`, t)))
-        ).via(connection(uri.host, uri.port)).runWith(Sink.ignore)
+        ).via(connection(uri.host, uri.port, uri.ssl)).runWith(Sink.ignore)
     }
   }
 
-  def connection(host: String, port: Int = 8080, ssl: Boolean = false)(implicit system: ActorSystem): Connection = {
+  def connection(host: String, port: Int, ssl: Boolean)(implicit system: ActorSystem): Connection = {
     if (ssl) Http().outgoingConnectionHttps(host, port)
     else Http().outgoingConnection(host, port)
   }
