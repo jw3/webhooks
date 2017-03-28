@@ -12,36 +12,33 @@ import webhooks.models._
 import scala.concurrent.Future
 
 object Hook {
-  def props()(implicit mat: ActorMaterializer): Props = Props(new Hook)
+  def props(hook: HookConfig)(implicit mat: ActorMaterializer): Props = Props(new Hook(hook))
 
-  def hookMethod(hook: HookConfig): HttpMethod = HttpMethods.getForKeyCaseInsensitive(hook.method).getOrElse(HttpMethods.getForKey(Defaults.defaultMethod).get)
-  def validScheme(s: String): Boolean = s.startsWith("http://") || s.startsWith("https://")
-
+  case object Start
   case class Body(payload: String)
 }
 
-class Hook(implicit mat: ActorMaterializer) extends Actor with ActorLogging {
+class Hook(hook: HookConfig)(implicit mat: ActorMaterializer) extends Actor with ActorLogging {
   import context.system
 
   def inactive: Receive = {
-    case cfg: HookConfig ⇒
-      val fn = nospan(cfg.host, cfg.port, cfg.path, hookMethod(cfg))
-      val topics = cfg.topics.map(Class.forName)
-      context.become(compile(topics: _*)(self, cfg.body).orElse(fn))
+    case Start ⇒
+      val topics = hook.topics.map(Class.forName)
+      context.become(compile(topics: _*)(self, hook.body.getOrElse("")).orElse(nospan))
   }
 
-  def nospan(host: String, port: Int, path: String, method: HttpMethod): Receive = {
-    val conn = connection(host, port)
+  def nospan: Receive = {
+    val uri = Uri(hook.url)
 
     {
       case Body(t) ⇒
-        streams.request(path)(r =>
-          Future.successful(r.withMethod(method).withEntity(HttpEntity.apply(ContentTypes.`application/json`, t)))
-        ).via(conn).runWith(Sink.ignore)
+        streams.request(uri.nonEmptyPath)(r =>
+          Future.successful(r.withMethod(hook.method).withEntity(HttpEntity.apply(ContentTypes.`application/json`, t)))
+        ).via(connection(uri.host, uri.port, uri.ssl)).runWith(Sink.ignore)
     }
   }
 
-  def connection(host: String, port: Int = 8080, ssl: Boolean = false)(implicit system: ActorSystem): Connection = {
+  def connection(host: String, port: Int, ssl: Boolean)(implicit system: ActorSystem): Connection = {
     if (ssl) Http().outgoingConnectionHttps(host, port)
     else Http().outgoingConnection(host, port)
   }

@@ -1,12 +1,13 @@
 package webhooks
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{HttpMethods, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import akka.util.Timeout
 import org.scalatest.{EitherValues, Matchers, WordSpecLike}
+import webhooks.Hook.Start
 import webhooks.HookSpec._
 import webhooks.models.HookConfig
 
@@ -27,10 +28,10 @@ class HookSpec extends TestKit(ActorSystem()) with WordSpecLike with Matchers wi
       "baz" in {
         val probe = TestProbe()
         val svc = testService(probe.ref)
-        val hook = testHook(svc)
         val cfg = testCfg(body = "{{id}}", "webhooks.TestingCC")
+        val hook = testHook(cfg, svc)
 
-        hook ! cfg
+        hook ! Start
 
         val id = "bam"
         hook ! TestingCC(id)
@@ -45,9 +46,9 @@ case class TestingCC(id: String)
 object HookSpec {
   case class M1(id: String)
 
-  def testCfg(body: String, topics: String*) = HookConfig("unused", path = "/callback", body = body, topics = topics)
+  def testCfg(body: String, topics: String*) = HookConfig("http://foo.bar/callback", HttpMethods.POST, Some(body), topics = topics)
 
-  def testHook(svc: Connection)(implicit system: ActorSystem, mat: ActorMaterializer) = TestActorRef[Hook](new Hook() {
+  def testHook(cfg: HookConfig, svc: Connection)(implicit system: ActorSystem, mat: ActorMaterializer) = TestActorRef[Hook](new Hook(cfg) {
     override def connection(host: String, port: Int, ssl: Boolean)(implicit system: ActorSystem): Connection =
       svc
   })
