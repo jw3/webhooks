@@ -1,6 +1,8 @@
 package webhooks
 
+import akka.Done
 import akka.actor.Actor.ignoringBehavior
+import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
@@ -15,6 +17,8 @@ object Hook {
 
   case object NoBody
   case class Body(payload: String)
+
+  case class HookFailed(ec: StatusCode) extends RuntimeException
 }
 
 class Hook(hook: HookConfig)(implicit mat: ActorMaterializer) extends Actor with ActorLogging {
@@ -29,11 +33,20 @@ class Hook(hook: HookConfig)(implicit mat: ActorMaterializer) extends Actor with
     )
   }
 
+  def awaiting: Receive = {
+    case HttpResponse(c, _, _, _) if c.isSuccess ⇒
+      log.info("callback complete")
+      context.stop(self)
+
+    case HttpResponse(ec, _, _, _) ⇒ throw HookFailed(ec)
+    case Failure(ex) ⇒ throw ex
+  }
+
   def callback(uri: Uri, fn: HttpRequest ⇒ HttpRequest = identity) = {
     Source.single(HttpRequest(hook.method, uri.nonEmptyPath))
     .map(fn)
     .via(connection(uri.host, uri.port, uri.ssl))
-    .runWith(Sink.ignore)
+    .runWith(Sink.actorRef(self, Done))
   }
 
   def connection(host: String, port: Int, ssl: Boolean)(implicit system: ActorSystem): Connection = {
